@@ -2,7 +2,15 @@
 
 Workflow: **Debug APK** (`.github/workflows/debug-apk.yml`).
 
-## Getting the APK
+## Install on a phone (easiest)
+
+Open **https://github.com/tlenenao/SimpMusic/releases/tag/nightly** in the phone's browser and download
+`SimpMusic-arm64-v8a.apk` (most phones; `SimpMusic-universal.apk` if unsure), then open it and allow
+"install unknown apps" for the browser. The release is replaced on every push to `dev`.
+It is signed with the debug key: uninstall any release SimpMusic first, and updates between nightlies
+keep working as long as the key is the same (the CI runner's debug key may change, then uninstall first).
+
+## Getting the APK from Actions
 
 1. GitHub -> your fork -> **Actions** -> **Debug APK** -> open a successful run.
 2. Under **Artifacts**, download `simpmusic-debug-apk-<commit>` (a zip containing the `.apk`).

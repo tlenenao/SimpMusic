@@ -23,9 +23,10 @@ concurrency:
   group: debug-apk-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Read-only token. Uploading artifacts needs no extra permission.
+# Publishing the rolling "nightly" release needs write access; pull requests never publish
+# (and a fork's PR token is read-only anyway).
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -68,6 +69,21 @@ jobs:
           path: androidApp/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 14
+
+      # One rolling pre-release: each push replaces it, so the install link never changes.
+      - name: Publish to the nightly release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p dist
+          for abi in arm64-v8a armeabi-v7a x86_64 universal; do
+            cp androidApp/build/outputs/apk/debug/androidApp-$abi-debug.apk dist/SimpMusic-$abi.apk
+          done
+          gh release delete nightly --cleanup-tag --yes || true
+          gh release create nightly dist/*.apk --prerelease --target "$GITHUB_SHA" \
+            --title "Nightly (${GITHUB_SHA::7})" \
+            --notes "Debug build of \`dev\` at ${GITHUB_SHA::7}. Most phones: **SimpMusic-arm64-v8a.apk**. Not sure: SimpMusic-universal.apk."
 
       - name: Upload reports on failure
         if: failure()

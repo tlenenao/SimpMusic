@@ -58,6 +58,17 @@ private const val TAG = "Lastfm"
 private var apiKey: String = ""
 private var sharedSecret: String = ""
 
+// Typed by the user in Settings. Public tags need only a key, no secret and no login, so genre
+// lookups work without a key compiled in.
+private var userTagKey: String = ""
+
+/** The module accepts a user-supplied key (true here, false in the FOSS stub). */
+fun isLastfmTagKeySupported(): Boolean = true
+
+fun configLastfmTagKey(key: String) {
+    userTagKey = key.trim()
+}
+
 /**
  * Hands the module its credentials.
  *
@@ -144,4 +155,18 @@ suspend fun setLoved(
 ): LastfmOutcome {
     if (!isLastfmAvailable()) return LastfmOutcome.Error(0, "Last.fm is not configured")
     return LastfmClient.setLoved(apiKey, sharedSecret, sessionKey, artist, track, loved)
+}
+
+/**
+ * Public tags of a track, the only thing the genre feature needs from Last.fm.
+ *
+ * Needs an API key (the one typed in Settings, else the build's) but no session, so it works for users who never logged in to Last.fm.
+ */
+suspend fun fetchTrackTags(
+    artist: String,
+    track: String,
+): LastfmTagsOutcome {
+    val key = userTagKey.ifEmpty { apiKey }
+    if (key.isEmpty()) return LastfmTagsOutcome.Rejected("Last.fm is not configured")
+    return LastfmClient.getTopTags(key, artist, track)
 }

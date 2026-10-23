@@ -327,6 +327,9 @@ import simpmusic.composeapp.generated.resources.lrclib
 import simpmusic.composeapp.generated.resources.lyrics
 import simpmusic.composeapp.generated.resources.lyrics_style
 import simpmusic.composeapp.generated.resources.lyrics_offset
+import simpmusic.composeapp.generated.resources.lastfm_genre_key
+import simpmusic.composeapp.generated.resources.lastfm_genre_key_info
+import simpmusic.composeapp.generated.resources.lastfm_genre_key_invalid
 import simpmusic.composeapp.generated.resources.lyrics_offset_invalid
 import simpmusic.composeapp.generated.resources.lyrics_offset_message
 import simpmusic.composeapp.generated.resources.lyrics_offset_value
@@ -2172,6 +2175,45 @@ fun SettingScreen(
                         subtitle = stringResource(Res.string.scrobbling_info),
                         switch = (lastfmScrobbleEnabled to { viewModel.setLastfmScrobbleEnabled(it) }),
                         isEnable = lastfmLoggedIn,
+                    )
+                }
+            }
+        }
+        if (viewModel.lastfmTagKeySupported) {
+            item(key = "lastfm_genre_key") {
+                val tagKey by viewModel.lastfmTagKey.collectAsStateWithLifecycle()
+                SettingGroup(title = stringResource(Res.string.lastfm_genre_key)) {
+                    SettingItem(
+                        title = stringResource(Res.string.lastfm_genre_key),
+                        subtitle =
+                            if (tagKey.isBlank()) {
+                                stringResource(Res.string.lastfm_genre_key_info)
+                            } else {
+                                "•••• " + tagKey.takeLast(4)
+                            },
+                        onClick = {
+                            viewModel.setAlertData(
+                                SettingAlertState(
+                                    title = runBlocking { getString(Res.string.lastfm_genre_key) },
+                                    message = runBlocking { getString(Res.string.lastfm_genre_key_info) },
+                                    textField =
+                                        SettingAlertState.TextFieldData(
+                                            label = runBlocking { getString(Res.string.lastfm_genre_key) },
+                                            value = tagKey,
+                                            // Empty clears it; otherwise a Last.fm key is 32 hex characters.
+                                            verifyCodeBlock = {
+                                                (it.isBlank() || Regex("[0-9a-fA-F]{32}").matches(it.trim())) to
+                                                    runBlocking { getString(Res.string.lastfm_genre_key_invalid) }
+                                            },
+                                        ),
+                                    confirm =
+                                        runBlocking { getString(Res.string.change) } to { state ->
+                                            viewModel.setLastfmTagKey(state.textField?.value.orEmpty())
+                                        },
+                                    dismiss = runBlocking { getString(Res.string.cancel) },
+                                ),
+                            )
+                        },
                     )
                 }
             }

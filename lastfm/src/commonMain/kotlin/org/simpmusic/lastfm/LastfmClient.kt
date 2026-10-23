@@ -4,9 +4,12 @@ import com.maxrave.ktorext.getEngine
 import com.maxrave.logger.Logger
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.Parameters
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -219,4 +222,32 @@ internal object LastfmClient {
         val response = call(params, secret) ?: return LastfmOutcome.Error(-1, "Network error")
         return response.asErrorOrNull() ?: LastfmOutcome.Ok
     }
+
+    /**
+     * Public tags of a track. `autocorrect=0` on purpose: with it on Last.fm silently swaps in a
+     * different, "corrected" track, which would hand the tags of another song to this one.
+     */
+    suspend fun getTopTags(
+        apiKey: String,
+        artist: String,
+        track: String,
+    ): LastfmTagsOutcome =
+        try {
+            val response =
+                client.get(ENDPOINT) {
+                    parameter("method", "track.getTopTags")
+                    parameter("api_key", apiKey)
+                    parameter("artist", artist)
+                    parameter("track", track)
+                    parameter("autocorrect", "0")
+                    parameter("format", "json")
+                }
+            parseTopTags(response.status.value, response.bodyAsText())
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // No stack trace or URL in the log: the URL carries the API key.
+            Logger.e(TAG, "track.getTopTags failed: ${e::class.simpleName}")
+            LastfmTagsOutcome.Temporary(e::class.simpleName ?: "network error")
+        }
 }

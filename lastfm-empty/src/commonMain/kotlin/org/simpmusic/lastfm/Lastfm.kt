@@ -78,3 +78,33 @@ suspend fun setLoved(
     track: String,
     loved: Boolean,
 ): LastfmOutcome = LastfmOutcome.Error(0, UNAVAILABLE)
+
+data class LastfmTag(
+    val name: String,
+    val count: Int?,
+)
+
+sealed interface LastfmTagsOutcome {
+    data class Tags(
+        val tags: List<LastfmTag>,
+    ) : LastfmTagsOutcome
+
+    data object NotFound : LastfmTagsOutcome
+
+    data class Temporary(
+        val message: String,
+    ) : LastfmTagsOutcome
+
+    data class Rejected(
+        val message: String,
+    ) : LastfmTagsOutcome
+}
+
+suspend fun fetchTrackTags(
+    artist: String,
+    track: String,
+): LastfmTagsOutcome = LastfmTagsOutcome.Rejected(UNAVAILABLE)
+
+fun isLastfmTagKeySupported(): Boolean = false
+
+fun configLastfmTagKey(key: String) = Unit

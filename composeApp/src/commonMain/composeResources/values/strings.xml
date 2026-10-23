@@ -449,6 +449,9 @@
     <string name="lyrics_offset">Lyrics timing offset</string>
     <string name="lyrics_offset_message">Shift every lyric line by this many milliseconds. Use a positive number when you hear the audio later than you see it, which is what Bluetooth headphones do, and a negative number to make the lyrics appear earlier.</string>
     <string name="lyrics_offset_value">%1$s ms</string>
+    <string name="lastfm_genre_key">Last.fm API key (genre playlists)</string>
+    <string name="lastfm_genre_key_info">Optional. Paste your own Last.fm API key so liked songs can be filed into genre playlists. Without it, MusicBrainz alone is used.</string>
+    <string name="lastfm_genre_key_invalid">A Last.fm API key is 32 hexadecimal characters</string>
     <string name="lyrics_offset_invalid">Enter a whole number of milliseconds</string>
     <string name="lyrics_romanization">Lyrics romanization</string>
     <string name="lyrics_romanization_description">Show lyrics in Latin script for the languages you pick</string>

@@ -36,6 +36,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -48,6 +51,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.koin.core.component.inject
 import org.simpmusic.lastfm.isLastfmAvailable
+import org.simpmusic.lastfm.isLastfmTagKeySupported
+import com.maxrave.domain.genre.GenreSettings
 import org.jetbrains.compose.resources.getString as formatString
 import simpmusic.composeapp.generated.resources.Res
 import simpmusic.composeapp.generated.resources.backup_create_failed
@@ -207,6 +212,19 @@ class SettingsViewModel(
      * could never succeed.
      */
     val lastfmAvailable: Boolean = isLastfmAvailable()
+
+    /** Whether Settings offers the Last.fm key field for genre playlists (Full builds only). */
+    val lastfmTagKeySupported: Boolean = isLastfmTagKeySupported()
+
+    val lastfmTagKey: StateFlow<String> =
+        dataStoreManager
+            .getString(GenreSettings.LASTFM_KEY)
+            .map { it.orEmpty() }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, "")
+
+    fun setLastfmTagKey(key: String) {
+        viewModelScope.launch { dataStoreManager.putString(GenreSettings.LASTFM_KEY, key.trim()) }
+    }
 
     private val _lastfmUsername = MutableStateFlow("")
     val lastfmUsername: StateFlow<String> = _lastfmUsername

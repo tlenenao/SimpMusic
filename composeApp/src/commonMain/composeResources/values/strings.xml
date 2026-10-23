@@ -449,6 +449,11 @@
     <string name="lyrics_offset">Lyrics timing offset</string>
     <string name="lyrics_offset_message">Shift every lyric line by this many milliseconds. Use a positive number when you hear the audio later than you see it, which is what Bluetooth headphones do, and a negative number to make the lyrics appear earlier.</string>
     <string name="lyrics_offset_value">%1$s ms</string>
+    <string name="genre_playlists">Genre playlists</string>
+    <string name="genre_rebuild">Rebuild genre playlists</string>
+    <string name="genre_rebuild_info">Look up the genres of every liked song again and file them into their Genre playlists. Songs are only added, never removed.</string>
+    <string name="genre_rebuild_started">Rebuilding genre playlists for %1$d liked songs in the background</string>
+    <string name="genre_rebuild_none">No liked songs to file</string>
     <string name="lastfm_genre_key">Last.fm API key (genre playlists)</string>
     <string name="lastfm_genre_key_info">Optional. Paste your own Last.fm API key so liked songs can be filed into genre playlists. Without it, MusicBrainz alone is used.</string>
     <string name="lastfm_genre_key_invalid">A Last.fm API key is 32 hexadecimal characters</string>

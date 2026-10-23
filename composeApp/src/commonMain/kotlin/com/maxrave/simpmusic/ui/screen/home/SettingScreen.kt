@@ -327,6 +327,9 @@ import simpmusic.composeapp.generated.resources.lrclib
 import simpmusic.composeapp.generated.resources.lyrics
 import simpmusic.composeapp.generated.resources.lyrics_style
 import simpmusic.composeapp.generated.resources.lyrics_offset
+import simpmusic.composeapp.generated.resources.genre_playlists
+import simpmusic.composeapp.generated.resources.genre_rebuild
+import simpmusic.composeapp.generated.resources.genre_rebuild_info
 import simpmusic.composeapp.generated.resources.lastfm_genre_key
 import simpmusic.composeapp.generated.resources.lastfm_genre_key_info
 import simpmusic.composeapp.generated.resources.lastfm_genre_key_invalid
@@ -2179,10 +2182,15 @@ fun SettingScreen(
                 }
             }
         }
-        if (viewModel.lastfmTagKeySupported) {
-            item(key = "lastfm_genre_key") {
-                val tagKey by viewModel.lastfmTagKey.collectAsStateWithLifecycle()
-                SettingGroup(title = stringResource(Res.string.lastfm_genre_key)) {
+        item(key = "genre_playlists") {
+            val tagKey by viewModel.lastfmTagKey.collectAsStateWithLifecycle()
+            SettingGroup(title = stringResource(Res.string.genre_playlists)) {
+                SettingItem(
+                    title = stringResource(Res.string.genre_rebuild),
+                    subtitle = stringResource(Res.string.genre_rebuild_info),
+                    onClick = { viewModel.rebuildGenrePlaylists() },
+                )
+                if (viewModel.lastfmTagKeySupported) {
                     SettingItem(
                         title = stringResource(Res.string.lastfm_genre_key),
                         subtitle =

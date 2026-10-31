@@ -36,6 +36,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -48,6 +51,9 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.koin.core.component.inject
 import org.simpmusic.lastfm.isLastfmAvailable
+import org.simpmusic.lastfm.isLastfmTagKeySupported
+import com.maxrave.domain.genre.GenreReingest
+import com.maxrave.domain.genre.GenreSettings
 import org.jetbrains.compose.resources.getString as formatString
 import simpmusic.composeapp.generated.resources.Res
 import simpmusic.composeapp.generated.resources.backup_create_failed
@@ -61,6 +67,8 @@ import simpmusic.composeapp.generated.resources.clear_listening_history_done
 import simpmusic.composeapp.generated.resources.clear_player_cache
 import simpmusic.composeapp.generated.resources.clear_thumbnail_cache
 import simpmusic.composeapp.generated.resources.downloading_liked_songs
+import simpmusic.composeapp.generated.resources.genre_rebuild_none
+import simpmusic.composeapp.generated.resources.genre_rebuild_started
 import simpmusic.composeapp.generated.resources.error
 import simpmusic.composeapp.generated.resources.log_out_confirm_message
 import simpmusic.composeapp.generated.resources.restore_failed
@@ -84,6 +92,7 @@ class SettingsViewModel(
 ) : BaseViewModel() {
     private val databasePath: String? = commonRepository.getDatabasePath()
     private val downloadUtils: DownloadHandler by inject()
+    private val genreReingest: GenreReingest by inject()
 
     val castState: StateFlow<GenericCastState> get() = mediaPlayerHandler.castState
 
@@ -207,6 +216,33 @@ class SettingsViewModel(
      * could never succeed.
      */
     val lastfmAvailable: Boolean = isLastfmAvailable()
+
+    /** Whether Settings offers the Last.fm key field for genre playlists (Full builds only). */
+    val lastfmTagKeySupported: Boolean = isLastfmTagKeySupported()
+
+    val lastfmTagKey: StateFlow<String> =
+        dataStoreManager
+            .getString(GenreSettings.LASTFM_KEY)
+            .map { it.orEmpty() }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, "")
+
+    /** Files every liked song into its genre playlists again, asking the providers afresh. */
+    fun rebuildGenrePlaylists() {
+        viewModelScope.launch {
+            val queued = genreReingest.reingestLikedSongs()
+            makeToast(
+                if (queued == 0) {
+                    getString(Res.string.genre_rebuild_none)
+                } else {
+                    formatString(Res.string.genre_rebuild_started, queued)
+                },
+            )
+        }
+    }
+
+    fun setLastfmTagKey(key: String) {
+        viewModelScope.launch { dataStoreManager.putString(GenreSettings.LASTFM_KEY, key.trim()) }
+    }
 
     private val _lastfmUsername = MutableStateFlow("")
     val lastfmUsername: StateFlow<String> = _lastfmUsername

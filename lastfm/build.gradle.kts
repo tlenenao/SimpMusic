@@ -44,6 +44,12 @@ kotlin {
                 implementation(libs.okio)
             }
         }
+
+        commonTest {
+            dependencies {
+                implementation(libs.kotlin.test)
+            }
+        }
     }
 }
 

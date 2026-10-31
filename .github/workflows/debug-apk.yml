@@ -1,0 +1,98 @@
+name: Debug APK
+# Development build: unsigned-by-us (Android debug key), no release secrets, safe on pull requests.
+# The signed release build lives in android.yml and is left alone.
+on:
+  workflow_dispatch:
+  push:
+    branches: [ dev ]
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - 'fastlane/**'
+      - 'changelogs/**'
+  pull_request:
+    branches: [ dev ]
+    paths-ignore:
+      - 'README.md'
+      - 'docs/**'
+      - 'fastlane/**'
+      - 'changelogs/**'
+
+# One run per branch/PR: a newer push cancels the older, now pointless, build.
+concurrency:
+  group: debug-apk-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Publishing the rolling "nightly" release needs write access; pull requests never publish
+# (and a fork's PR token is read-only anyway).
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      # `core` is a git submodule, so a plain checkout would leave the app without its modules.
+      - uses: actions/checkout@v6
+        with:
+          submodules: 'recursive'
+
+      - name: set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: "microsoft"
+          cache: 'gradle'
+
+      - name: Accept Android SDK licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Generate aboutLibraries.json
+        run: ./gradlew exportLibraryDefinitions
+
+      - name: Unit tests
+        run: ./gradlew :domain:jvmTest :lastfm:jvmTest :data:jvmTest
+
+      - name: Build debug APK
+        run: ./gradlew :androidApp:assembleDebug
+
+      - name: Check the APK exists
+        run: |
+          ls -l androidApp/build/outputs/apk/debug/*.apk
+          test -n "$(ls androidApp/build/outputs/apk/debug/*.apk 2>/dev/null)"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: simpmusic-debug-apk-${{ github.sha }}
+          path: androidApp/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      # One rolling pre-release: each push replaces it, so the install link never changes.
+      - name: Publish to the nightly release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p dist
+          for abi in arm64-v8a armeabi-v7a x86_64 universal; do
+            cp androidApp/build/outputs/apk/debug/androidApp-$abi-debug.apk dist/SimpMusic-$abi.apk
+          done
+          gh release delete nightly --cleanup-tag --yes || true
+          gh release create nightly dist/*.apk --prerelease --target "$GITHUB_SHA" \
+            --title "Nightly (${GITHUB_SHA::7})" \
+            --notes "Debug build of \`dev\` at ${GITHUB_SHA::7}. Most phones: **SimpMusic-arm64-v8a.apk**. Not sure: SimpMusic-universal.apk."
+
+      - name: Upload reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ github.sha }}
+          path: |
+            **/build/reports/tests/**
+            **/build/test-results/**
+            **/build/reports/problems/**
+          if-no-files-found: ignore
+          retention-days: 7
